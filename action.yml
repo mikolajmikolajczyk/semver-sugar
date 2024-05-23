@@ -1,10 +1,10 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'semver-sugar'
+description: 'This github action was created to simplify tagging and releasing applications using semver. It supports multiple release lines.'
+author: 'Devbay.io'
 inputs:
   myInput:              # change this
     description: 'input description here'
     default: 'default value if applicable'
 runs:
-  using: 'node12'
+  using: 'node20'
   main: 'dist/index.js'

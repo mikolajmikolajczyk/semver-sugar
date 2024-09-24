@@ -1,6 +1,6 @@
 name: 'semver-sugar'
 description: 'This github action was created to simplify tagging and releasing applications using semver. It supports multiple release lines.'
-author: 'Devbay.io'
+author: 'Mikołaj Mikołajczyk'
 inputs:
   myInput:              # change this
     description: 'input description here'

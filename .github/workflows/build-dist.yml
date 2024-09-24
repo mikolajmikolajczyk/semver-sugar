@@ -54,10 +54,14 @@ jobs:
           mv main-macos-latest/main dist/main_darwin
           mv main-windows-latest/main dist/main_windows.exe
           chmod a+x dist/main_*
-      - name: Commit and push
+      - name: Commit and push if changes exist
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add "dist/main_*"
-          git commit -m "Build new distributable packages for version ${{ github.sha }}"
-          git push origin "${{ github.ref }}"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Build new distributable packages for version ${{ github.sha }}"
+            git push origin "${{ github.ref }}"
+          fi

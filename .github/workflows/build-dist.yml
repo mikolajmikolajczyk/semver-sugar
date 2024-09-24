@@ -58,6 +58,6 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add dist/main_*
-          git commit -m "Built new distributable packages"
-          git push origin HEAD:${GITHUB_REF#refs/heads/}
+          git add "dist/main_*"
+          git commit -m "Build new distributable packages for version ${{ github.sha }}"
+          git push origin "${{ github.ref }}"

@@ -6,7 +6,7 @@
 
 Use this template to bootstrap the creation of a Golang action.:rocket:
 
-This template includes compiliation support, tests, a validation workflow, publishing, and versioning guidance.  
+This template includes compiliation support, tests, a validation workflow, publishing, and versioning guidance.
 
 ## Create an action from this template
 
@@ -14,7 +14,7 @@ Click the `Use this Template` and provide the new repo details for your action
 
 ## Code in Master
 
-Install the dependencies  
+Install the dependencies
 ```bash
 $ go mod download
 ```
@@ -24,7 +24,7 @@ Build the code
 $ go build
 ```
 
-Run the tests :heavy_check_mark:  
+Run the tests :heavy_check_mark:
 ```bash
 $ go test -v ./...
 
@@ -56,9 +56,9 @@ import * as core from '@actions/core';
 ...
 
 async function run() {
-  try { 
+  try {
       ...
-  } 
+  }
   catch (error) {
     core.setFailed(error.message);
   }
@@ -73,7 +73,7 @@ See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/R
 
 ## Publish to a distribution branch
 
-Actions are run from GitHub repos.  We will create a releases branch and only checkin production modules (core in this case). 
+Actions are run from GitHub repos.  We will create a releases branch and only checkin production modules (core in this case).
 
 ```bash
 $ git checkout -b releases/v1
@@ -85,7 +85,7 @@ $ git commit -a -m "prod dependencies"
 $ git push origin releases/v1
 ```
 
-Your action is now published! :rocket: 
+Your action is now published! :rocket:
 
 See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
 

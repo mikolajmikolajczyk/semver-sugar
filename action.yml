@@ -32,7 +32,7 @@ inputs:
 
   github_uploads_url:
     description: "URL to github enterprise uploads"
-
+    required: false
   custom_release_sha:
     description: "SHA to use for custom release"
     required: false

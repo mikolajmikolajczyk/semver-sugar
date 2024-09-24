@@ -7,11 +7,7 @@ import (
 	"github.com/actions-go/toolkit/core"
 )
 
-func runMain() {
+func main() {
 	release_branch := os.Getenv("INPUT_RELEASE_BRANCH")
 	core.Debug(fmt.Sprintf("Release branch is %s", release_branch))
-}
-
-func main() {
-	runMain()
 }

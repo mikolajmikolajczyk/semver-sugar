@@ -1,10 +1,21 @@
-module github.com/actions-go/go-action
+module github.com/mikolajmikolajczyk/semver-sugar
 
-go 1.17
+go 1.21
+
+toolchain go1.22.1
 
 require (
 	github.com/actions-go/toolkit v0.0.0-20200119151346-09edac1c7d93
 	github.com/blang/semver/v4 v4.0.0
+	github.com/google/go-github/v65 v65.0.0
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+)
+
+require (
+	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	golang.org/x/net v0.0.0-20190311183353-d8887717615a // indirect
+	google.golang.org/appengine v1.4.0 // indirect
 )
 
 require (

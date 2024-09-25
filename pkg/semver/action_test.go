@@ -3,6 +3,9 @@ package semver
 import (
 	"errors"
 	"testing"
+
+	"github.com/google/go-github/v65/github"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBumpSemverVersion(t *testing.T) {
@@ -57,4 +60,81 @@ func TestBumpSemverVersion(t *testing.T) {
 		}(t)
 	}
 
+}
+
+func TestExtractSemVerIncrementFromPullRequest(t *testing.T) {
+	tests := []struct {
+		name          string
+		labels        []*github.Label
+		expectedInc   Increment
+		expectedError error
+	}{
+		{
+			name:          "No labels",
+			labels:        []*github.Label{},
+			expectedInc:   IncrementPatch,
+			expectedError: errors.New("no valid semver labels found"),
+		},
+		{
+			name: "Single valid label",
+			labels: []*github.Label{
+				{
+					Name: github.String("patch"),
+				},
+			},
+			expectedInc:   IncrementPatch,
+			expectedError: nil,
+		},
+		{
+			name: "Multiple valid labels",
+			labels: []*github.Label{
+				{
+					Name: github.String("patch"),
+				},
+				{
+					Name: github.String("minor"),
+				},
+			},
+			expectedInc:   IncrementPatch,
+			expectedError: errors.New("multiple valid semver labels found"),
+		},
+		{
+			name: "Invalid label",
+			labels: []*github.Label{
+				{
+					Name: github.String("invalid-label"),
+				},
+			},
+			expectedInc:   IncrementPatch,
+			expectedError: errors.New("no valid semver labels found"),
+		},
+		{
+			name: "Nil label name",
+			labels: []*github.Label{
+				{
+					Name: nil,
+				},
+			},
+			expectedInc:   IncrementPatch,
+			expectedError: errors.New("no valid semver labels found"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pr := &github.PullRequest{
+				Labels: tt.labels,
+			}
+
+			inc, err := ExtractSemVerIncrementFromPullRequest(pr)
+
+			if tt.expectedError != nil {
+				assert.EqualError(t, err, tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedInc, inc)
+		})
+	}
 }

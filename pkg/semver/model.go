@@ -25,7 +25,7 @@ type Version struct {
 	patch uint64
 }
 
-func (v Version) bump(inc Increment) Version {
+func (v Version) Bump(inc Increment) Version {
 	switch inc {
 	case IncrementPatch:
 		return Version{
@@ -54,7 +54,7 @@ func (v Version) String() string {
 	return fmt.Sprintf("v%d.%d.%d", v.major, v.minor, v.patch)
 }
 
-func (v Version) format(format string) string {
+func (v Version) Format(format string) string {
 	formatted := format
 
 	formatted = strings.ReplaceAll(formatted, "%major%", strconv.FormatUint(v.major, 10))

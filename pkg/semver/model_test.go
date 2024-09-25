@@ -36,7 +36,7 @@ func TestVersionBump(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		bumped := testCase.version.bump(testCase.increment)
+		bumped := testCase.version.Bump(testCase.increment)
 
 		require.Equal(t, testCase.expectedVersion, bumped.String())
 	}
@@ -57,7 +57,7 @@ func TestFormat(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		require.Equal(t, testCase.expectedVersion, testCase.version.format(testCase.format))
+		require.Equal(t, testCase.expectedVersion, testCase.version.Format(testCase.format))
 	}
 }
 

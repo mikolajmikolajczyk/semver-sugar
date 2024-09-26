@@ -1,9 +1,7 @@
 package commands
 
 import (
-	"context"
 	"errors"
-	"strings"
 
 	"github.com/actions-go/toolkit/core"
 	"github.com/mikolajmikolajczyk/semver-sugar/pkg/semver"
@@ -29,13 +27,16 @@ var (
 
 // ExecuteGuard guards the execution of the action based on the pull request
 // state and labels.
-func ExecuteGuard(releaseBranch string, eventPath string) error {
+func ExecuteGuard(ghActionIface utils.GithubActionIface, releaseBranch string, eventPath string) error {
 	if releaseBranch == "" || eventPath == "" {
 		core.Errorf("empty releaseBranch or eventPath: releaseBranch=%s eventPath=%s", releaseBranch, eventPath)
 		return ErrEmptyOption // fail
 	}
 
-	event := utils.ParseGithubEvent(eventPath)
+	event, err := ghActionIface.ParseGithubEvent(eventPath)
+	if err != nil {
+		return err
+	}
 
 	if event.Action == nil || *event.Action != "closed" {
 		return ErrPRNotClosed // skip
@@ -52,21 +53,24 @@ func ExecuteGuard(releaseBranch string, eventPath string) error {
 		return ErrBaseRefDoesNotMatchReleaseBranch // skip
 
 	}
-	_, err := semver.ExtractSemVerIncrementFromPullRequest(event.PullRequest)
+	_, err = semver.ExtractSemVerIncrementFromPullRequest(event.PullRequest)
 	if err != nil {
 		return ErrNoValidSemVerLabelFound // skip
 	}
 	return nil
 }
 
-func ExecuteGetIncrement(eventPath string) (string, error) {
-	event := utils.ParseGithubEvent(eventPath)
+func ExecuteGetIncrement(ghActionIface utils.GithubActionIface, eventPath string) (string, error) {
+	event, err := ghActionIface.ParseGithubEvent(eventPath)
+	if err != nil {
+		return "", err
+	}
 	increment, err := semver.ExtractSemVerIncrementFromPullRequest(event.PullRequest)
 	return string(increment), err
 }
 
-func ExecuteGetGithubLatestTag(repository, githubToken, githubAPIURL, githubUploadsURL, versionRange string) (string, error) {
-	return utils.GetGithubLatestTag(repository, githubToken, githubAPIURL, githubUploadsURL, versionRange)
+func ExecuteGetGithubLatestTag(ghActionIface utils.GithubActionIface, versionRange string) (string, error) {
+	return ghActionIface.GetGithubLatestTag(versionRange)
 }
 
 func ExecuteGetNextTag(currentVersion, increment, format string) (string, error) {
@@ -81,35 +85,16 @@ func ExecuteGetNextTag(currentVersion, increment, format string) (string, error)
 	return version.Bump(inc).Format(format), nil
 }
 
-type repository struct {
-	owner string
-	name  string
-	token string
-}
-
-func ExecuteCreateRelease(githubRepository, githubSHA, nextTag, githubToken, githubApiUrl, githubUploadsUrl, releaseStrategy string) error {
-	parts := strings.Split(githubRepository, "/")
-	repo := repository{
-		owner: parts[0],
-		name:  parts[1],
-		token: githubToken,
-	}
-
-	ctx := context.Background()
-	client, err := utils.NewGithubClient(ctx, githubToken, githubApiUrl, githubUploadsUrl)
-	if err != nil {
-		return err
-	}
-
+func ExecuteCreateRelease(ghActionIface utils.GithubActionIface, githubSHA, nextTag, releaseStrategy string) error {
 	switch releaseStrategy {
 	case ReleaseStrategyNone:
 		return nil
 	case ReleaseStrategyRelease:
-		if err := utils.CreateGithubRelease(ctx, client, repo.owner, repo.name, repo.token, nextTag, githubSHA); err != nil {
+		if err := ghActionIface.CreateGithubRelease(nextTag, githubSHA); err != nil {
 			return err
 		}
 	case ReleaseStrategyTag:
-		if err := utils.CreateGithubTag(ctx, client, repo.owner, repo.name, repo.token, nextTag, githubSHA); err != nil {
+		if err := ghActionIface.CreateGithubTag(nextTag, githubSHA); err != nil {
 			return err
 		}
 	default:

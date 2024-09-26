@@ -15,49 +15,54 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func NewGithubClient(ctx context.Context, token, githubApiUrl, githubUploadUrl string) (*github.Client, error) {
-	var err error
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	client := github.NewClient(oauth2.NewClient(ctx, tokenSource))
-	if githubApiUrl != "" {
-		if githubUploadUrl == "" {
-			githubUploadUrl = strings.Replace(githubApiUrl, "api", "uploads", 1)
-		}
-		client, err = client.WithEnterpriseURLs(githubApiUrl, githubUploadUrl)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return client, nil
+type GithubActionIface interface {
+	CreateGithubTag(version, target string) error
+	CreateGithubRelease(version, target string) error
+	GetGithubLatestTag(versionRange string) (string, error)
+	ParseGithubEvent(filePath string) (*github.PullRequestEvent, error)
 }
 
-func ParseGithubEvent(filePath string) *github.PullRequestEvent {
+type GithubActionImpl struct {
+	Repository       string
+	Token            string
+	GithubApiUrl     string
+	GithubUploadsUrl string
+	GithubClient     *github.Client
+}
+
+func NewGithubActionImpl(repository, token, githubApiUrl, githubUploadsUrl string) (*GithubActionImpl, error) {
+	ghClient, err := newGithubClient(context.Background(), token, githubApiUrl, githubUploadsUrl)
+	return &GithubActionImpl{
+		Repository:       repository,
+		Token:            token,
+		GithubApiUrl:     githubApiUrl,
+		GithubUploadsUrl: githubUploadsUrl,
+		GithubClient:     ghClient,
+	}, err
+}
+
+func (impl *GithubActionImpl) ParseGithubEvent(filePath string) (*github.PullRequestEvent, error) {
 	parsed, err := github.ParseWebHook(filePath, readGithubEvent(filePath))
 	if err != nil {
-		core.Error(err.Error())
+		return nil, err
 	}
 
 	event, ok := parsed.(*github.PullRequestEvent)
 	if !ok {
-		core.Error("Not a pull request event")
+		return nil, fmt.Errorf("invalid event")
 	}
-	return event
+	return event, nil
 
 }
 
-func GetGithubLatestTag(repository, githubToken, githubApiURL, githubUploadsURL, versionRange string) (string, error) {
+func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, error) {
 	ctx := context.Background()
 
-	client, err := NewGithubClient(ctx, githubToken, githubApiURL, githubUploadsURL)
-	if err != nil {
-		return "", err
-	}
-
-	parts := strings.Split(repository, "/")
+	parts := strings.Split(impl.Repository, "/")
 	owner := parts[0]
 	repo := parts[1]
 
-	refs, response, err := client.Git.ListMatchingRefs(ctx, owner, repo, &github.ReferenceListOptions{
+	refs, response, err := impl.GithubClient.Git.ListMatchingRefs(ctx, owner, repo, &github.ReferenceListOptions{
 		Ref: "tags",
 	})
 	if response != nil && response.StatusCode == http.StatusNotFound {
@@ -84,8 +89,12 @@ func GetGithubLatestTag(repository, githubToken, githubApiURL, githubUploadsURL,
 	return latest.String(), nil
 }
 
-func CreateGithubTag(ctx context.Context, client *github.Client, owner, repo, token, version, target string) error {
-	_, _, err := client.Git.CreateRef(ctx, owner, repo, &github.Reference{
+func (impl *GithubActionImpl) CreateGithubTag(version, target string) error {
+	parts := strings.Split(impl.Repository, "/")
+	owner := parts[0]
+	repo := parts[1]
+
+	_, _, err := impl.GithubClient.Git.CreateRef(context.Background(), owner, repo, &github.Reference{
 		Ref: github.String(fmt.Sprintf("refs/tags/%s", version)),
 		Object: &github.GitObject{
 			SHA: &target,
@@ -94,8 +103,11 @@ func CreateGithubTag(ctx context.Context, client *github.Client, owner, repo, to
 	return err
 }
 
-func CreateGithubRelease(ctx context.Context, client *github.Client, owner, repo, token, version, target string) error {
-	_, _, err := client.Repositories.CreateRelease(ctx, owner, repo, &github.RepositoryRelease{
+func (impl *GithubActionImpl) CreateGithubRelease(version, target string) error {
+	parts := strings.Split(impl.Repository, "/")
+	owner := parts[0]
+	repo := parts[1]
+	_, _, err := impl.GithubClient.Repositories.CreateRelease(context.Background(), owner, repo, &github.RepositoryRelease{
 		Name:            &version,
 		TagName:         &version,
 		TargetCommitish: &target,
@@ -117,4 +129,20 @@ func readGithubEvent(filePath string) []byte {
 	}
 	core.Info(string(b))
 	return b
+}
+
+func newGithubClient(ctx context.Context, token, githubApiUrl, githubUploadUrl string) (*github.Client, error) {
+	var err error
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	client := github.NewClient(oauth2.NewClient(ctx, tokenSource))
+	if githubApiUrl != "" {
+		if githubUploadUrl == "" {
+			githubUploadUrl = strings.Replace(githubApiUrl, "api", "uploads", 1)
+		}
+		client, err = client.WithEnterpriseURLs(githubApiUrl, githubUploadUrl)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return client, nil
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/actions-go/toolkit/core"
 	"github.com/mikolajmikolajczyk/semver-sugar/pkg/commands"
+	"github.com/mikolajmikolajczyk/semver-sugar/pkg/utils"
 )
 
 type ActionConfig struct {
@@ -20,7 +21,6 @@ type ActionConfig struct {
 	EventPath        string
 	GithubRepository string
 	GithubToken      string
-	GuardDisabled    bool
 }
 
 func ActionConfigFromEnv() ActionConfig {
@@ -42,15 +42,12 @@ func ActionConfigFromEnv() ActionConfig {
 		EventPath:        os.Getenv("GITHUB_EVENT_PATH"),
 		GithubRepository: os.Getenv("GITHUB_REPOSITORY"),
 		GithubToken:      os.Getenv("GITHUB_TOKEN"),
-		GuardDisabled:    os.Getenv("INPUT_GUARD_DISABLED") == "true",
 	}
 }
 
-func main() {
-	actionConfig := ActionConfigFromEnv()
-
+func executeAction(ghActionIface utils.GithubActionIface, actionConfig ActionConfig) {
 	// This will prevent the action from running if the guard fails
-	err := commands.ExecuteGuard(actionConfig.ReleaseBranch, actionConfig.EventPath)
+	err := commands.ExecuteGuard(ghActionIface, actionConfig.ReleaseBranch, actionConfig.EventPath)
 	if err != nil {
 		if err == commands.ErrPRNotBase || err == commands.ErrEmptyOption {
 			core.Error(err.Error())
@@ -61,12 +58,12 @@ func main() {
 	}
 
 	if actionConfig.NextTag != "" {
-		latestTag, err := commands.ExecuteGetGithubLatestTag(actionConfig.GithubRepository, actionConfig.GithubToken, actionConfig.GithubApiUrl, actionConfig.GithubUploadsUrl, actionConfig.VersionRange)
+		latestTag, err := commands.ExecuteGetGithubLatestTag(ghActionIface, actionConfig.VersionRange)
 		if err != nil {
 			core.Error(err.Error())
 			os.Exit(1)
 		}
-		incr, err := commands.ExecuteGetIncrement(actionConfig.EventPath)
+		incr, err := commands.ExecuteGetIncrement(ghActionIface, actionConfig.EventPath)
 		if err != nil {
 			core.Error(err.Error())
 			os.Exit(1)
@@ -80,11 +77,22 @@ func main() {
 		actionConfig.NextTag = nextTag
 	}
 
-	err = commands.ExecuteCreateRelease(actionConfig.GithubRepository, actionConfig.CustomReleaseSHA, actionConfig.NextTag, actionConfig.GithubToken, actionConfig.GithubApiUrl, actionConfig.GithubUploadsUrl, actionConfig.ReleaseStrategy)
+	err = commands.ExecuteCreateRelease(ghActionIface, actionConfig.CustomReleaseSHA, actionConfig.NextTag, actionConfig.ReleaseStrategy)
 	if err != nil {
 		core.Error(err.Error())
 		os.Exit(1)
 	}
 	core.SetOutput("tag", actionConfig.NextTag)
 	core.SetOutput("increment", actionConfig.Increment)
+}
+
+func main() {
+	actionConfig := ActionConfigFromEnv()
+	ghIface, err := utils.NewGithubActionImpl(actionConfig.GithubApiUrl, actionConfig.GithubUploadsUrl, actionConfig.GithubRepository, actionConfig.GithubToken)
+	if err != nil {
+		core.Error(err.Error())
+		os.Exit(1)
+	}
+
+	executeAction(ghIface, actionConfig)
 }

@@ -2,25 +2,19 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/actions-go/toolkit/core"
 	semver "github.com/blang/semver/v4"
+	msemver "github.com/mikolajmikolajczyk/semver-sugar/pkg/semver"
 
 	"github.com/google/go-github/v65/github"
 	"golang.org/x/oauth2"
 )
-
-type GithubActionIface interface {
-	CreateGithubTag(version, target string) error
-	CreateGithubRelease(version, target string) error
-	GetGithubLatestTag(versionRange string) (string, error)
-	ParseGithubEvent(filePath string) (*github.PullRequestEvent, error)
-}
 
 type GithubActionImpl struct {
 	Repository       string
@@ -42,7 +36,12 @@ func NewGithubActionImpl(repository, token, githubApiUrl, githubUploadsUrl strin
 }
 
 func (impl *GithubActionImpl) ParseGithubEvent(filePath string) (*github.PullRequestEvent, error) {
-	parsed, err := github.ParseWebHook(filePath, readGithubEvent(filePath))
+	eventBytes, err := readGithubEvent(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	parsed, err := github.ParseWebHook("pull_request", eventBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -56,20 +55,17 @@ func (impl *GithubActionImpl) ParseGithubEvent(filePath string) (*github.PullReq
 }
 
 func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, error) {
-	ctx := context.Background()
-
 	parts := strings.Split(impl.Repository, "/")
 	owner := parts[0]
 	repo := parts[1]
-
-	refs, response, err := impl.GithubClient.Git.ListMatchingRefs(ctx, owner, repo, &github.ReferenceListOptions{
+	refs, response, err := impl.GithubClient.Git.ListMatchingRefs(context.Background(), owner, repo, &github.ReferenceListOptions{
 		Ref: "tags",
 	})
-	if response != nil && response.StatusCode == http.StatusNotFound {
-		return "v0.0.0", nil
-	}
 	if err != nil {
 		return "", err
+	}
+	if response != nil && response.StatusCode == http.StatusNotFound {
+		return "", errors.New("wrong response when listing mathing refs")
 	}
 	expectedRange, err := semver.ParseRange(versionRange)
 	if err != nil {
@@ -87,6 +83,10 @@ func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, e
 		}
 	}
 	return latest.String(), nil
+}
+
+func (impl *GithubActionImpl) GetNextTag(currentVersion, increment, format string) (string, error) {
+	return msemver.BumpSemverVersion(currentVersion, increment, format)
 }
 
 func (impl *GithubActionImpl) CreateGithubTag(version, target string) error {
@@ -117,18 +117,26 @@ func (impl *GithubActionImpl) CreateGithubRelease(version, target string) error 
 	return err
 }
 
-func readGithubEvent(filePath string) []byte {
+func (impl *GithubActionImpl) GetIncrementType(eventPath string) (string, error) {
+	event, err := impl.ParseGithubEvent(eventPath)
+	if err != nil {
+		return "", err
+	}
+	increment, err := msemver.ExtractSemVerIncrementFromPullRequest(event.PullRequest)
+	return string(increment), err
+}
+
+func readGithubEvent(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		core.Error(err.Error())
+		return nil, err
 	}
 	defer file.Close()
 	b, err := io.ReadAll(file)
 	if err != nil {
-		core.Error(err.Error())
+		return nil, err
 	}
-	core.Info(string(b))
-	return b
+	return b, nil
 }
 
 func newGithubClient(ctx context.Context, token, githubApiUrl, githubUploadUrl string) (*github.Client, error) {

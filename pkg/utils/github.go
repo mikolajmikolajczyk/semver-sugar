@@ -55,7 +55,7 @@ func (impl *GithubActionImpl) ParseGithubEvent(filePath string) (*github.PullReq
 }
 
 func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, error) {
-	repo, owner, err := parseRepository(impl.Repository)
+	owner, repo, err := parseRepository(impl.Repository)
 	if err != nil {
 		return "", err
 	}
@@ -91,7 +91,7 @@ func (impl *GithubActionImpl) GetNextTag(currentVersion, increment, format strin
 }
 
 func (impl *GithubActionImpl) CreateGithubTag(version, target string) error {
-	repo, owner, err := parseRepository(impl.Repository)
+	owner, repo, err := parseRepository(impl.Repository)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (impl *GithubActionImpl) CreateGithubTag(version, target string) error {
 }
 
 func (impl *GithubActionImpl) CreateGithubRelease(version, target string) error {
-	repo, owner, err := parseRepository(impl.Repository)
+	owner, repo, err := parseRepository(impl.Repository)
 	if err != nil {
 		return err
 	}

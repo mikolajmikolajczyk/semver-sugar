@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	semver "github.com/blang/semver/v4"
-	msemver "github.com/mikolajmikolajczyk/semver-sugar/pkg/semver"
+	blangsemver "github.com/blang/semver/v4"
+	"github.com/mikolajmikolajczyk/semver-sugar/pkg/semver"
 
 	"github.com/google/go-github/v65/github"
 	"golang.org/x/oauth2"
@@ -68,14 +68,14 @@ func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, e
 	if response != nil && response.StatusCode == http.StatusNotFound {
 		return "", errors.New("wrong response when listing mathing refs")
 	}
-	expectedRange, err := semver.ParseRange(versionRange)
+	expectedRange, err := blangsemver.ParseRange(versionRange)
 	if err != nil {
 		return "", err
 	}
 
-	latest := semver.MustParse("0.0.0")
+	latest := blangsemver.MustParse("0.0.0")
 	for _, ref := range refs {
-		version, err := semver.ParseTolerant(strings.Replace(*ref.Ref, "refs/tags/", "", 1))
+		version, err := blangsemver.ParseTolerant(strings.Replace(*ref.Ref, "refs/tags/", "", 1))
 		if err != nil {
 			continue
 		}
@@ -87,7 +87,7 @@ func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, e
 }
 
 func (impl *GithubActionImpl) GetNextTag(currentVersion, increment, format string) (string, error) {
-	return msemver.BumpSemverVersion(currentVersion, increment, format)
+	return semver.BumpSemverVersion(currentVersion, increment, format)
 }
 
 func (impl *GithubActionImpl) CreateGithubTag(version, target string) error {
@@ -125,7 +125,7 @@ func (impl *GithubActionImpl) GetIncrementType(eventPath string) (string, error)
 	if err != nil {
 		return "", err
 	}
-	increment, err := msemver.ExtractSemVerIncrementFromPullRequest(event.PullRequest)
+	increment, err := semver.ExtractSemVerIncrementFromPullRequest(event.PullRequest)
 	return string(increment), err
 }
 

@@ -1,10 +1,53 @@
 name: 'semver-sugar'
 description: 'This github action was created to simplify tagging and releasing applications using semver. It supports multiple release lines.'
 author: 'Mikołaj Mikołajczyk'
+
+branding:
+  icon: "tag"
+  color: "green"
+
 inputs:
-  myInput:              # change this
-    description: 'input description here'
-    default: 'default value if applicable'
+  release_branch:
+    description: 'Branch to use for release'
+    required: true
+    default: 'master'
+
+  release_strategy:
+    description: 'Release strategy'
+    required: true
+    default: 'release'
+
+  tag_format:
+    description: 'Format used to create tags'
+    required: true
+    default: "v%major%.%minor%.%patch%"
+
+  tag:
+    description: "Tag to use"
+    required: false
+
+  github_api_url:
+    description: "URL to github enterprise api"
+    required: false
+
+  github_uploads_url:
+    description: "URL to github enterprise uploads"
+    required: false
+  custom_release_sha:
+    description: "SHA to use for custom release"
+    required: false
+
+  version_range:
+    description: "Version range to use for latest-tag"
+    required: true
+    default: ">0.0.0"
+
+outputs:
+  tag:
+    description: 'Tag created by this action'
+  increment:
+    description: 'Increment type performed if any'
+
 runs:
   using: 'node20'
   main: 'dist/index.js'

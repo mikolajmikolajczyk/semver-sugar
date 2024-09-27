@@ -1,115 +1,104 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
+# semver-sugar
 
-# Create an Action using Golang
+[![GitHub release](https://img.shields.io/github/v/release/mikolajmikolajczyk/semver-sugar)](https://github.com/mikolajmikolajczyk/semver-sugar/releases)
+[![GitHub issues](https://img.shields.io/github/issues/mikolajmikolajczyk/semver-sugar)](https://github.com/mikolajmikolajczyk/semver-sugar/issues)
+[![GitHub license](https://img.shields.io/github/license/mikolajmikolajczyk/semver-sugar)](https://github.com/mikolajmikolajczyk/semver-sugar/blob/main/LICENSE)
 
-Use this template to bootstrap the creation of a Golang action.:rocket:
+`semver-sugar` is a GitHub Action designed to simplify the process of tagging and releasing applications using [Semantic Versioning (SemVer)](https://semver.org/). This action supports multiple release strategies and offers flexibility in handling custom versioning scenarios.
 
-This template includes compiliation support, tests, a validation workflow, publishing, and versioning guidance.
+## Features
 
-## Create an action from this template
+- **Automated Versioning:** Automatically determine the next version based on SemVer labels in pull requests.
+- **Multiple Release Strategies:** Supports creating GitHub releases or just tags.
+- **Customizable Tag Formats:** Use custom tag formats to match your project's requirements.
+- **Multiple Release Lines:** Handle multiple branches and release lines with ease.
+- **Supports GitHub Enterprise:** Configurable API and upload URLs for GitHub Enterprise environments.
 
-Click the `Use this Template` and provide the new repo details for your action
+## Inputs
 
-## Code in Master
+| Name                | Description                               | Required | Default             |
+|---------------------|-------------------------------------------|----------|---------------------|
+| `release_branch`    | Branch to use for release                 | true     | `master`            |
+| `release_strategy`  | Release strategy (`release` or `tag`)     | true     | `release`           |
+| `tag_format`        | Format used to create tags                | true     | `v%major%.%minor%.%patch%` |
+| `tag`               | Tag to use                                | false    |                     |
+| `github_api_url`    | URL to GitHub Enterprise API              | false    |                     |
+| `github_uploads_url`| URL to GitHub Enterprise uploads          | false    |                     |
+| `custom_release_sha`| SHA to use for custom release             | false    |                     |
+| `version_range`     | Version range to use for latest tag       | true     | `>0.0.0`            |
 
-Install the dependencies
-```bash
-$ go mod download
-```
+## Outputs
 
-Build the code
-```bash
-$ go build
-```
+| Name      | Description                          |
+|-----------|--------------------------------------|
+| `tag`     | Tag created by this action           |
+| `increment` | Increment type performed if any     |
 
-Run the tests :heavy_check_mark:
-```bash
-$ go test -v ./...
+## Usage
 
-  === RUN   TestRunMain
-  --- PASS: TestRunMain (0.01s)
-  PASS
-  ok      github.com/actions-go/go-action    0.315s
-
-...
-```
-
-Commit the pre-built binaries to `./dist/main_linux`, `./dist/main_darwin` and `./dist/main_windows.exe` for respectively linux, mac OS and windows actions.
-
-## Change action.yml
-
-The action.yml contains defines the inputs and output for your action.
-
-Update the action.yml with your name, description, inputs and outputs for your action.
-
-See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-github-actions)
-
-<!---
-## Change the Code
-
-Most toolkit and CI/CD operations involve async operations so the action is run in an async function.
-
-```javascript
-import * as core from '@actions/core';
-...
-
-async function run() {
-  try {
-      ...
-  }
-  catch (error) {
-    core.setFailed(error.message);
-  }
-}
-
-run()
-```
-
-See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
-
--->
-
-## Publish to a distribution branch
-
-Actions are run from GitHub repos.  We will create a releases branch and only checkin production modules (core in this case).
-
-```bash
-$ git checkout -b releases/v1
-$ git commit -a -m "prod dependencies"
-```
-
-```bash
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
-```
-
-Your action is now published! :rocket:
-
-See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-
-<!--
-## Validate
-
-You can now validate the action by referencing the releases/v1 branch
+To use this action in your GitHub workflows, include the following steps:
 
 ```yaml
-uses: actions/typescript-action@releases/v1
-with:
-  milliseconds: 1000
+name: Release Workflow
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Run semver-sugar
+        uses: mikolajmikolajczyk/semver-sugar@v1
+        with:
+          release_branch: 'master'
+          release_strategy: 'release'
+          tag_format: 'v%major%.%minor%.%patch%'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-See the [actions tab](https://github.com/actions/javascript-action/actions) for runs of this action! :rocket:
+## Configuration
 
--->
+### Release Strategies
 
-## Usage:
+This action supports the following release strategies:
 
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and tested action
+- **`release`**: Creates a GitHub release with the new version tag.
+- **`tag`**: Creates a lightweight tag without a GitHub release.
 
-```yaml
-uses: actions-go/go-action@master
-with:
-  milliseconds: 1000
-```
+### Custom Release SHA
+
+If you want to create a release or tag for a specific commit, you can provide a custom SHA using the `custom_release_sha` input.
+
+### Version Range
+
+The `version_range` input allows you to specify a range to use when searching for the latest tag. This is useful for managing multiple release lines.
+
+## Based on semver-release-action
+
+This action is based on [K-Phoen/semver-release-action](https://github.com/K-Phoen/semver-release-action). It builds upon and extends the original functionality, providing additional features and customization options to better suit various workflows and environments.
+
+## Contributing
+
+Contributions are welcome! If you'd like to improve this action, feel free to fork the repository and submit a pull request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+This action was created by [Mikołaj Mikołajczyk](https://github.com/mikolajmikolajczyk) and inspired by the work of [Kevin Dunglas](https://github.com/K-Phoen) in the [semver-release-action](https://github.com/K-Phoen/semver-release-action) project.

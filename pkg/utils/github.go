@@ -55,9 +55,10 @@ func (impl *GithubActionImpl) ParseGithubEvent(filePath string) (*github.PullReq
 }
 
 func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, error) {
-	parts := strings.Split(impl.Repository, "/")
-	owner := parts[0]
-	repo := parts[1]
+	repo, owner, err := parseRepository(impl.Repository)
+	if err != nil {
+		return "", err
+	}
 	refs, response, err := impl.GithubClient.Git.ListMatchingRefs(context.Background(), owner, repo, &github.ReferenceListOptions{
 		Ref: "tags",
 	})
@@ -90,11 +91,12 @@ func (impl *GithubActionImpl) GetNextTag(currentVersion, increment, format strin
 }
 
 func (impl *GithubActionImpl) CreateGithubTag(version, target string) error {
-	parts := strings.Split(impl.Repository, "/")
-	owner := parts[0]
-	repo := parts[1]
+	repo, owner, err := parseRepository(impl.Repository)
+	if err != nil {
+		return err
+	}
 
-	_, _, err := impl.GithubClient.Git.CreateRef(context.Background(), owner, repo, &github.Reference{
+	_, _, err = impl.GithubClient.Git.CreateRef(context.Background(), owner, repo, &github.Reference{
 		Ref: github.String(fmt.Sprintf("refs/tags/%s", version)),
 		Object: &github.GitObject{
 			SHA: &target,
@@ -104,10 +106,11 @@ func (impl *GithubActionImpl) CreateGithubTag(version, target string) error {
 }
 
 func (impl *GithubActionImpl) CreateGithubRelease(version, target string) error {
-	parts := strings.Split(impl.Repository, "/")
-	owner := parts[0]
-	repo := parts[1]
-	_, _, err := impl.GithubClient.Repositories.CreateRelease(context.Background(), owner, repo, &github.RepositoryRelease{
+	repo, owner, err := parseRepository(impl.Repository)
+	if err != nil {
+		return err
+	}
+	_, _, err = impl.GithubClient.Repositories.CreateRelease(context.Background(), owner, repo, &github.RepositoryRelease{
 		Name:            &version,
 		TagName:         &version,
 		TargetCommitish: &target,
@@ -153,4 +156,12 @@ func newGithubClient(ctx context.Context, token, githubApiUrl, githubUploadUrl s
 		}
 	}
 	return client, nil
+}
+
+func parseRepository(repository string) (owner string, repo string, err error) {
+	parts := strings.Split(repository, "/")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid repository format: %s, expected 'owner/repo'", repository)
+	}
+	return parts[0], parts[1], nil
 }

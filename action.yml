@@ -1,5 +1,5 @@
 name: 'semver-sugar'
-description: 'This github action was created to simplify tagging and releasing applications using semver. It supports multiple release lines.'
+description: 'This github action was created to simplify tagging and releasing applications using semver.'
 author: 'Mikołaj Mikołajczyk'
 
 branding:

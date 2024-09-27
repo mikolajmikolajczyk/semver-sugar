@@ -19,7 +19,7 @@
 | Name                | Description                               | Required | Default             |
 |---------------------|-------------------------------------------|----------|---------------------|
 | `release_branch`    | Branch to use for release                 | true     | `master`            |
-| `release_strategy`  | Release strategy (`release` or `tag`)     | true     | `release`           |
+| `release_strategy`  | Release strategy (`release` or `tag` or `none`)     | true     | `release`           |
 | `tag_format`        | Format used to create tags                | true     | `v%major%.%minor%.%patch%` |
 | `tag`               | Tag to use                                | false    |                     |
 | `github_api_url`    | URL to GitHub Enterprise API              | false    |                     |

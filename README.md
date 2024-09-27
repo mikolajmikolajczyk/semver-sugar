@@ -54,12 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
+        uses: actions/checkout@v4
 
       - name: Run semver-sugar
         uses: mikolajmikolajczyk/semver-sugar@v1
@@ -69,6 +64,68 @@ jobs:
           tag_format: 'v%major%.%minor%.%patch%'
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+Increment type `patch`, `minor` and `major` will be selected based on label you put on pull request.
+
+Simple way to enforce labels is by creating additional workflow:
+
+```yaml
+name: PR required labels check
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize, reopened]
+jobs:
+  check-labels:
+    runs-on: pimhrunners
+    steps:
+      - uses: mheap/github-action-required-labels@v3
+        with:
+          mode: exactly
+          count: 1
+          labels: "patch, minor, major"
+          add_comment: true
+          message: "This PR is being prevented from merging because you have to provide exactly one of following labels: {{ provided }}."
+```
+
+## Multiple release lines usage
+
+Lets say you have multiple release lines and each release line is a separate branch:
+
+* release/v1.0.0
+* release/v2.0.0
+
+Then you can create separate `Release workflow` for each branch.
+
+
+On release/v1.0.0 you would do:
+```yaml
+- name: Semver Release
+  id: semver
+  uses: devbay-io/semver-release-action@master
+  with:
+    release_branch: ${{ env.BRANCH }}
+    release_strategy: none
+    tag_format: "%major%.%minor%.%patch%"
+    version_range: ">=1.0.0 <2.0.0"
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+On release/v2.0.0 you would do:
+```yaml
+- name: Semver Release
+  id: semver
+  uses: devbay-io/semver-release-action@master
+  with:
+    release_branch: ${{ env.BRANCH }}
+    release_strategy: none
+    tag_format: "%major%.%minor%.%patch%"
+    version_range: ">=2.0.0 <3.0.0"
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+This will make `semver-sugar` to create 1.x.x releases/tags when you merge to release/1.x.x and 2.x.x releases when you merge pull requests to release/2.x.x branch.
 
 ## Configuration
 

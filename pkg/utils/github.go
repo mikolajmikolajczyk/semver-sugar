@@ -129,6 +129,20 @@ func (impl *GithubActionImpl) GetIncrementType(eventPath string) (string, error)
 	return string(increment), err
 }
 
+func (impl *GithubActionImpl) DoesLabelExist(label string, eventPath string) (bool, error) {
+	event, err := impl.ParseGithubEvent(eventPath)
+	if err != nil {
+		return false, err
+	}
+
+	for _, l := range event.PullRequest.Labels {
+		if strings.EqualFold(*l.Name, label) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func readGithubEvent(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {

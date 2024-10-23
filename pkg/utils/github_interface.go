@@ -10,4 +10,5 @@ type GithubActionIface interface {
 	ParseGithubEvent(filePath string) (*github.PullRequestEvent, error)
 	GetIncrementType(eventPath string) (string, error)
 	GetNextTag(currentVersion, increment, format string) (string, error)
+	DoesLabelExist(label, eventPath string) (bool, error)
 }

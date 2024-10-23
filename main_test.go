@@ -238,9 +238,35 @@ func TestExecuteAction(t *testing.T) {
 				}, nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().GetNextTag(gomock.Any(), gomock.Any(), gomock.Any()).Return("v1.0.1", nil)
 				mockGHActionIface.EXPECT().GetGithubLatestTag(gomock.Any()).Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().CreateGithubRelease("v1.0.1", "abc123").Return(nil)
+			},
+			expectedExit: 0,
+		},
+		{
+			name: "Successful execution without NextTag - skip-release enabled",
+			actionConfig: ActionConfig{
+				ReleaseBranch:    "main",
+				EventPath:        "test_event.json",
+				NextTag:          "",
+				ReleaseStrategy:  ReleaseStrategyRelease,
+				CustomReleaseSHA: "abc123",
+			},
+			setupMock: func() {
+				mockGHActionIface.EXPECT().ParseGithubEvent("test_event.json").Return(&github.PullRequestEvent{
+					Action:      github.String("closed"),
+					PullRequest: &github.PullRequest{Merged: github.Bool(true), Base: &github.PullRequestBranch{Ref: github.String("main")}},
+				}, nil)
+				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
+				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(true, nil)
+				mockGHActionIface.EXPECT().GetNextTag(gomock.Any(), gomock.Any(), gomock.Any()).Return("v1.0.1", nil)
+				mockGHActionIface.EXPECT().GetGithubLatestTag(gomock.Any()).Return("v1.0.0", nil)
+				mockGHActionIface.EXPECT().CreateGithubRelease(gomock.Any(), gomock.Any()).Times(0)
 			},
 			expectedExit: 0,
 		},
@@ -253,7 +279,10 @@ func TestExecuteAction(t *testing.T) {
 				ReleaseStrategy:  ReleaseStrategyRelease,
 				CustomReleaseSHA: "abc123",
 			},
-			setupMock:     func() {},
+			setupMock: func() {
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
+			},
 			expectedExit:  1,
 			expectedError: ErrEmptyOption.Error(),
 		},
@@ -267,6 +296,8 @@ func TestExecuteAction(t *testing.T) {
 				CustomReleaseSHA: "abc123",
 			},
 			setupMock: func() {
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().ParseGithubEvent("test_event.json").Return(nil, ErrPRNotBase)
 			},
 			expectedExit:  1,
@@ -282,6 +313,8 @@ func TestExecuteAction(t *testing.T) {
 				CustomReleaseSHA: "abc123",
 			},
 			setupMock: func() {
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().ParseGithubEvent("test_event.json").Return(nil, ErrPRNotClosed)
 			},
 			expectedExit: 0,
@@ -300,8 +333,32 @@ func TestExecuteAction(t *testing.T) {
 					Action:      github.String("closed"),
 					PullRequest: &github.PullRequest{Merged: github.Bool(true), Base: &github.PullRequestBranch{Ref: github.String("main")}},
 				}, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
 				mockGHActionIface.EXPECT().CreateGithubRelease("v1.0.1", "abc123").Return(nil)
+
+			},
+			expectedExit: 0,
+		},
+		{
+			name: "Successful execution with existing NextTag - skip-release enabled",
+			actionConfig: ActionConfig{
+				ReleaseBranch:    "main",
+				EventPath:        "test_event.json",
+				NextTag:          "v1.0.1",
+				ReleaseStrategy:  ReleaseStrategyRelease,
+				CustomReleaseSHA: "abc123",
+			},
+			setupMock: func() {
+				mockGHActionIface.EXPECT().ParseGithubEvent("test_event.json").Return(&github.PullRequestEvent{
+					Action:      github.String("closed"),
+					PullRequest: &github.PullRequest{Merged: github.Bool(true), Base: &github.PullRequestBranch{Ref: github.String("main")}},
+				}, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(true, nil)
+				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
+				mockGHActionIface.EXPECT().CreateGithubRelease(gomock.Any(), gomock.Any()).Times(0)
+
 			},
 			expectedExit: 0,
 		},
@@ -322,6 +379,8 @@ func TestExecuteAction(t *testing.T) {
 					PullRequest: &github.PullRequest{Merged: github.Bool(true), Base: &github.PullRequestBranch{Ref: github.String("main")}},
 				}, nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().GetGithubLatestTag(">=1.0.0").Return("", errors.New("failed to get latest tag"))
 			},
 			expectedExit:  1,
@@ -347,6 +406,8 @@ func TestExecuteAction(t *testing.T) {
 						},
 					}, Merged: github.Bool(true), Base: &github.PullRequestBranch{Ref: github.String("main")}},
 				}, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().GetGithubLatestTag(">=1.0.0").Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("", errors.New("failed to get increment"))
 			},
@@ -369,6 +430,8 @@ func TestExecuteAction(t *testing.T) {
 					Action:      github.String("closed"),
 					PullRequest: &github.PullRequest{Merged: github.Bool(true), Base: &github.PullRequestBranch{Ref: github.String("main")}},
 				}, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("minor", nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("minor", nil)
 				mockGHActionIface.EXPECT().GetNextTag("v1.0.0", "minor", "v%d.%d.%d").Return("", errors.New("failed to generate next tag"))
@@ -390,6 +453,8 @@ func TestExecuteAction(t *testing.T) {
 					Action:      github.String("closed"),
 					PullRequest: &github.PullRequest{Merged: github.Bool(true), Base: &github.PullRequestBranch{Ref: github.String("main")}},
 				}, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("minor", nil)
 				mockGHActionIface.EXPECT().CreateGithubRelease("v1.1.0", "abc123").Return(errors.New("failed to create release"))
 			},

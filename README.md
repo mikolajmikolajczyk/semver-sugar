@@ -36,6 +36,12 @@
 
 ## Usage
 
+
+Tips:
+
+1. First release must be created manually to kickstart semver-sugar!
+2. semver-sugar have builtin support for `skip-release` and `skipRelease` labels on pull requests. When one of these labels is added to pull request then semver-sugar will skip actual github release and tagging part. (Useful for testing)
+
 To use this action in your GitHub workflows, include the following steps:
 
 ```yaml

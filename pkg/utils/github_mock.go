@@ -62,6 +62,21 @@ func (mr *MockGithubActionIfaceMockRecorder) CreateGithubTag(version, target int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGithubTag", reflect.TypeOf((*MockGithubActionIface)(nil).CreateGithubTag), version, target)
 }
 
+// DoesLabelExist mocks base method.
+func (m *MockGithubActionIface) DoesLabelExist(label, eventPath string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DoesLabelExist", label, eventPath)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DoesLabelExist indicates an expected call of DoesLabelExist.
+func (mr *MockGithubActionIfaceMockRecorder) DoesLabelExist(label, eventPath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoesLabelExist", reflect.TypeOf((*MockGithubActionIface)(nil).DoesLabelExist), label, eventPath)
+}
+
 // GetGithubLatestTag mocks base method.
 func (m *MockGithubActionIface) GetGithubLatestTag(versionRange string) (string, error) {
 	m.ctrl.T.Helper()

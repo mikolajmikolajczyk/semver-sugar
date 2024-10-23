@@ -126,16 +126,40 @@ func executeCreateRelease(ghActionIface utils.GithubActionIface, githubSHA, next
 	return nil
 }
 
+func isSkipReleaseLabelFound(ghActionIface utils.GithubActionIface, eventPath string) (bool, error) {
+	for _, labelName := range []string{"skip-release", "skipRelease"} {
+		isSkipRelease, err := ghActionIface.DoesLabelExist(labelName, eventPath)
+		if err != nil {
+			return false, err
+		}
+		if isSkipRelease {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// TODO: ./main.go:157:10: elseif: can replace 'else {if cond {}}' with 'else if cond {}'
 func executeAction(ghActionIface utils.GithubActionIface, actionConfig ActionConfig) {
+	isSkipRelease, err := isSkipReleaseLabelFound(ghActionIface, actionConfig.EventPath)
+	if err != nil {
+		Exit(1)
+	}
 	core.Info("Executing PR guard now")
 	// This will prevent the action from running if the guard fails
-	err := executeGuard(ghActionIface, actionConfig.ReleaseBranch, actionConfig.EventPath)
+	err = executeGuard(ghActionIface, actionConfig.ReleaseBranch, actionConfig.EventPath)
 	if err != nil {
 		core.Error(err.Error())
-		if err == ErrPRNotBase || err == ErrEmptyOption || err == ErrNoValidSemVerLabelFound {
-			Exit(1)
+		switch err {
+		case ErrPRNotBase, ErrEmptyOption, ErrNoValidSemVerLabelFound:
+			if !isSkipRelease || err == ErrNoValidSemVerLabelFound {
+				Exit(1)
+			}
+		default:
+			if !isSkipRelease {
+				Exit(0)
+			}
 		}
-		Exit(0)
 	}
 
 	core.Debug("Executing next tag calculation now")
@@ -166,11 +190,15 @@ func executeAction(ghActionIface utils.GithubActionIface, actionConfig ActionCon
 		actionConfig.NextTag = nextTag
 	}
 
-	core.Debug("Executing release creation now")
-	err = executeCreateRelease(ghActionIface, actionConfig.CustomReleaseSHA, actionConfig.NextTag, actionConfig.ReleaseStrategy)
-	if err != nil {
-		core.Error(err.Error())
-		Exit(1)
+	if !isSkipRelease {
+		core.Debug("Executing release creation now")
+		err = executeCreateRelease(ghActionIface, actionConfig.CustomReleaseSHA, actionConfig.NextTag, actionConfig.ReleaseStrategy)
+		if err != nil {
+			core.Error(err.Error())
+			Exit(1)
+		}
+	} else {
+		core.Info("Skipping release creation because of skip-release label")
 	}
 	core.SetOutput("tag", actionConfig.NextTag)
 	core.SetOutput("increment", actionConfig.Increment)

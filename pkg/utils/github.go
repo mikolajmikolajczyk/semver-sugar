@@ -111,11 +111,12 @@ func (impl *GithubActionImpl) CreateGithubRelease(version, target string) error 
 		return err
 	}
 	_, _, err = impl.GithubClient.Repositories.CreateRelease(context.Background(), owner, repo, &github.RepositoryRelease{
-		Name:            &version,
-		TagName:         &version,
-		TargetCommitish: &target,
-		Draft:           github.Bool(false),
-		Prerelease:      github.Bool(false),
+		Name:                 &version,
+		TagName:              &version,
+		TargetCommitish:      &target,
+		Draft:                github.Bool(false),
+		Prerelease:           github.Bool(false),
+		GenerateReleaseNotes: github.Bool(true),
 	})
 	return err
 }

@@ -34,6 +34,9 @@ func TestExecuteCreateRelease(t *testing.T) {
 			setupMock: func() {
 				// Expect a successful call to CreateGithubRelease
 				mockGHActionIface.EXPECT().CreateGithubRelease("v1.0.0", "abc123").Return(nil)
+
+				// Expect a successful call to GenerateReleaseNotes
+				mockGHActionIface.EXPECT().GenerateReleaseNotes("v1.0.0", "v0.0.1").Return(nil, nil, nil)
 			},
 			expectedError: nil,
 		},
@@ -75,7 +78,7 @@ func TestExecuteCreateRelease(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
-			err := executeCreateRelease(mockGHActionIface, "abc123", "v1.0.0", tt.releaseStrategy)
+			err := executeCreateRelease(mockGHActionIface, "abc123", "v0.0.1", "v1.0.0", tt.releaseStrategy)
 			assert.Equal(t, tt.expectedError, err)
 		})
 	}
@@ -243,6 +246,8 @@ func TestExecuteAction(t *testing.T) {
 				mockGHActionIface.EXPECT().GetNextTag(gomock.Any(), gomock.Any(), gomock.Any()).Return("v1.0.1", nil)
 				mockGHActionIface.EXPECT().GetGithubLatestTag(gomock.Any()).Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().CreateGithubRelease("v1.0.1", "abc123").Return(nil)
+				// Expect a successful call to GenerateReleaseNotes
+				mockGHActionIface.EXPECT().GenerateReleaseNotes("v1.0.1", "v1.0.0").Return(nil, nil, nil)
 			},
 			expectedExit: 0,
 		},
@@ -267,6 +272,7 @@ func TestExecuteAction(t *testing.T) {
 				mockGHActionIface.EXPECT().GetNextTag(gomock.Any(), gomock.Any(), gomock.Any()).Return("v1.0.1", nil)
 				mockGHActionIface.EXPECT().GetGithubLatestTag(gomock.Any()).Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().CreateGithubRelease(gomock.Any(), gomock.Any()).Times(0)
+				mockGHActionIface.EXPECT().GenerateReleaseNotes(gomock.Any(), gomock.Any()).Times(0)
 			},
 			expectedExit: 0,
 		},
@@ -336,7 +342,10 @@ func TestExecuteAction(t *testing.T) {
 				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
+				mockGHActionIface.EXPECT().GetGithubLatestTag(gomock.Any()).Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().CreateGithubRelease("v1.0.1", "abc123").Return(nil)
+				// Expect a successful call to GenerateReleaseNotes
+				mockGHActionIface.EXPECT().GenerateReleaseNotes("v1.0.1", gomock.Any()).Return(nil, nil, nil)
 
 			},
 			expectedExit: 0,
@@ -357,6 +366,7 @@ func TestExecuteAction(t *testing.T) {
 				}, nil)
 				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(true, nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("patch", nil)
+				mockGHActionIface.EXPECT().GetGithubLatestTag(gomock.Any()).Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().CreateGithubRelease(gomock.Any(), gomock.Any()).Times(0)
 
 			},
@@ -408,7 +418,6 @@ func TestExecuteAction(t *testing.T) {
 				}, nil)
 				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
-				mockGHActionIface.EXPECT().GetGithubLatestTag(">=1.0.0").Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("", errors.New("failed to get increment"))
 			},
 			expectedExit:  1,
@@ -434,6 +443,7 @@ func TestExecuteAction(t *testing.T) {
 				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("minor", nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("minor", nil)
+				mockGHActionIface.EXPECT().GetGithubLatestTag(gomock.Any()).Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().GetNextTag("v1.0.0", "minor", "v%d.%d.%d").Return("", errors.New("failed to generate next tag"))
 			},
 			expectedExit:  1,
@@ -455,6 +465,7 @@ func TestExecuteAction(t *testing.T) {
 				}, nil)
 				mockGHActionIface.EXPECT().DoesLabelExist("skip-release", gomock.Any()).Return(false, nil)
 				mockGHActionIface.EXPECT().DoesLabelExist("skipRelease", gomock.Any()).Return(false, nil)
+				mockGHActionIface.EXPECT().GetGithubLatestTag(gomock.Any()).Return("v1.0.0", nil)
 				mockGHActionIface.EXPECT().GetIncrementType("test_event.json").Return("minor", nil)
 				mockGHActionIface.EXPECT().CreateGithubRelease("v1.1.0", "abc123").Return(errors.New("failed to create release"))
 			},

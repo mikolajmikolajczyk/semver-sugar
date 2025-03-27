@@ -6,6 +6,7 @@ import "github.com/google/go-github/v65/github"
 type GithubActionIface interface {
 	CreateGithubTag(version, target string) error
 	CreateGithubRelease(version, target string) error
+	GenerateReleaseNotes(version, lastTag string) (*github.RepositoryReleaseNotes, *github.Response, error)
 	GetGithubLatestTag(versionRange string) (string, error)
 	ParseGithubEvent(filePath string) (*github.PullRequestEvent, error)
 	GetIncrementType(eventPath string) (string, error)

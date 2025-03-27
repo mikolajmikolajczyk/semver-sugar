@@ -77,6 +77,22 @@ func (mr *MockGithubActionIfaceMockRecorder) DoesLabelExist(label, eventPath int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoesLabelExist", reflect.TypeOf((*MockGithubActionIface)(nil).DoesLabelExist), label, eventPath)
 }
 
+// GenerateReleaseNotes mocks base method.
+func (m *MockGithubActionIface) GenerateReleaseNotes(version, lastTag string) (*github.RepositoryReleaseNotes, *github.Response, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateReleaseNotes", version, lastTag)
+	ret0, _ := ret[0].(*github.RepositoryReleaseNotes)
+	ret1, _ := ret[1].(*github.Response)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GenerateReleaseNotes indicates an expected call of GenerateReleaseNotes.
+func (mr *MockGithubActionIfaceMockRecorder) GenerateReleaseNotes(version, lastTag interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateReleaseNotes", reflect.TypeOf((*MockGithubActionIface)(nil).GenerateReleaseNotes), version, lastTag)
+}
+
 // GetGithubLatestTag mocks base method.
 func (m *MockGithubActionIface) GetGithubLatestTag(versionRange string) (string, error) {
 	m.ctrl.T.Helper()

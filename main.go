@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/actions-go/toolkit/core"
@@ -107,12 +108,19 @@ func executeGuard(ghActionIface utils.GithubActionIface, releaseBranch string, e
 	return nil
 }
 
-func executeCreateRelease(ghActionIface utils.GithubActionIface, githubSHA, nextTag, releaseStrategy string) error {
+func executeCreateRelease(ghActionIface utils.GithubActionIface, githubSHA, currentTag, nextTag, releaseStrategy string) error {
 	switch releaseStrategy {
 	case ReleaseStrategyNone:
 		return nil
 	case ReleaseStrategyRelease:
+		core.Debug("Creating release now")
 		if err := ghActionIface.CreateGithubRelease(nextTag, githubSHA); err != nil {
+			return err
+		}
+		core.Debug("Generating release notes now")
+		if _, resp, err := ghActionIface.GenerateReleaseNotes(nextTag, currentTag); err != nil {
+			bodyBytes, _ := io.ReadAll(resp.Response.Body)
+			core.Debug(string(bodyBytes))
 			return err
 		}
 	case ReleaseStrategyTag:
@@ -163,15 +171,15 @@ func executeAction(ghActionIface utils.GithubActionIface, actionConfig ActionCon
 	}
 
 	core.Debug("Executing next tag calculation now")
+	core.Debug("Getting latest tag from github repository")
+	latestTag, err := ghActionIface.GetGithubLatestTag(actionConfig.VersionRange)
+	if err != nil {
+		core.Error(err.Error())
+		Exit(1)
+	}
+	actionConfig.CurrentTag = latestTag
+	core.Debug("Latest tag is " + latestTag)
 	if actionConfig.NextTag == "" {
-		core.Debug("Getting latest tag from github repository")
-		latestTag, err := ghActionIface.GetGithubLatestTag(actionConfig.VersionRange)
-		if err != nil {
-			core.Error(err.Error())
-			Exit(1)
-		}
-		core.Debug("Latest tag is: " + latestTag)
-		actionConfig.CurrentTag = latestTag
 		core.Debug("Getting increment type from github event")
 		incr, err := ghActionIface.GetIncrementType(actionConfig.EventPath)
 		if err != nil {
@@ -186,13 +194,13 @@ func executeAction(ghActionIface utils.GithubActionIface, actionConfig ActionCon
 			core.Error(err.Error())
 			Exit(1)
 		}
-		core.Debug("Next tag is: " + nextTag)
+		core.Debug("Next tag is " + nextTag)
 		actionConfig.NextTag = nextTag
 	}
 
 	if !isSkipRelease {
 		core.Debug("Executing release creation now")
-		err = executeCreateRelease(ghActionIface, actionConfig.CustomReleaseSHA, actionConfig.NextTag, actionConfig.ReleaseStrategy)
+		err = executeCreateRelease(ghActionIface, actionConfig.CustomReleaseSHA, actionConfig.CurrentTag, actionConfig.NextTag, actionConfig.ReleaseStrategy)
 		if err != nil {
 			core.Error(err.Error())
 			Exit(1)

@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/actions-go/toolkit/core"
 	blangsemver "github.com/blang/semver/v4"
 	"github.com/mikolajmikolajczyk/semver-sugar/pkg/semver"
 
@@ -66,7 +67,7 @@ func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, e
 		return "", err
 	}
 	if response != nil && response.StatusCode == http.StatusNotFound {
-		return "", errors.New("wrong response when listing mathing refs")
+		return "", errors.New("wrong response when listing matching refs")
 	}
 	expectedRange, err := blangsemver.ParseRange(versionRange)
 	if err != nil {
@@ -74,16 +75,22 @@ func (impl *GithubActionImpl) GetGithubLatestTag(versionRange string) (string, e
 	}
 
 	latest := blangsemver.MustParse("0.0.0")
+	var latestTag string
 	for _, ref := range refs {
-		version, err := blangsemver.ParseTolerant(strings.Replace(*ref.Ref, "refs/tags/", "", 1))
+		tag := strings.Replace(*ref.Ref, "refs/tags/", "", 1)
+		version, err := blangsemver.ParseTolerant(tag)
 		if err != nil {
 			continue
 		}
 		if expectedRange(version) && version.GT(latest) {
 			latest = version
+			latestTag = tag // preserve the original tag (e.g., v1.2.3)
 		}
 	}
-	return latest.String(), nil
+	if latestTag == "" {
+		return "", errors.New("no matching tag found")
+	}
+	return latestTag, nil
 }
 
 func (impl *GithubActionImpl) GetNextTag(currentVersion, increment, format string) (string, error) {
@@ -119,6 +126,19 @@ func (impl *GithubActionImpl) CreateGithubRelease(version, target string) error 
 		GenerateReleaseNotes: github.Bool(true),
 	})
 	return err
+}
+
+func (impl *GithubActionImpl) GenerateReleaseNotes(version, lastTag string) (*github.RepositoryReleaseNotes, *github.Response, error) {
+	core.Debug("Last tag: " + lastTag)
+	core.Debug("Version: " + version)
+	owner, repo, err := parseRepository(impl.Repository)
+	if err != nil {
+		return nil, nil, err
+	}
+	return impl.GithubClient.Repositories.GenerateReleaseNotes(context.Background(), owner, repo, &github.GenerateNotesOptions{
+		TagName:         version,
+		PreviousTagName: github.String(lastTag),
+	})
 }
 
 func (impl *GithubActionImpl) GetIncrementType(eventPath string) (string, error) {

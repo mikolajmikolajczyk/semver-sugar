@@ -36,7 +36,6 @@ inputs:
   custom_release_sha:
     description: "SHA to use for custom release"
     required: false
-
   version_range:
     description: "Version range to use for latest-tag"
     required: true

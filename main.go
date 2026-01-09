@@ -119,7 +119,7 @@ func executeCreateRelease(ghActionIface utils.GithubActionIface, githubSHA, curr
 		}
 		core.Debug("Generating release notes now")
 		if _, resp, err := ghActionIface.GenerateReleaseNotes(nextTag, currentTag); err != nil {
-			bodyBytes, _ := io.ReadAll(resp.Response.Body)
+			bodyBytes, _ := io.ReadAll(resp.Body)
 			core.Debug(string(bodyBytes))
 			return err
 		}

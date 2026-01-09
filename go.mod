@@ -10,12 +10,7 @@ require (
 	golang.org/x/oauth2 v0.34.0
 )
 
-require (
-	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/google/go-querystring v1.2.0 // indirect
-	golang.org/x/net v0.48.0 // indirect
-	google.golang.org/appengine v1.6.8 // indirect
-)
+require github.com/google/go-querystring v1.2.0 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

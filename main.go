@@ -42,7 +42,7 @@ func ActionConfigFromEnv() ActionConfig {
 	return ActionConfig{
 		ReleaseBranch:    os.Getenv("INPUT_RELEASE_BRANCH"),
 		ReleaseStrategy:  os.Getenv("INPUT_RELEASE_STRATEGY"),
-		NextTag:          os.Getenv("INPUT_NEXT_TAG"),
+		NextTag:          os.Getenv("INPUT_TAG"),
 		TagFormat:        os.Getenv("INPUT_TAG_FORMAT"),
 		GithubApiUrl:     os.Getenv("INPUT_GITHUB_API_URL"),
 		GithubUploadsUrl: os.Getenv("INPUT_GITHUB_UPLOADS_URL"),
@@ -119,7 +119,7 @@ func executeCreateRelease(ghActionIface utils.GithubActionIface, githubSHA, curr
 		}
 		core.Debug("Generating release notes now")
 		if _, resp, err := ghActionIface.GenerateReleaseNotes(nextTag, currentTag); err != nil {
-			bodyBytes, _ := io.ReadAll(resp.Response.Body)
+			bodyBytes, _ := io.ReadAll(resp.Body)
 			core.Debug(string(bodyBytes))
 			return err
 		}

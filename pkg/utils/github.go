@@ -169,7 +169,12 @@ func readGithubEvent(filePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			core.Errorf("failed to close file, %v", err)
+		}
+	}()
 	b, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err

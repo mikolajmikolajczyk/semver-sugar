@@ -42,7 +42,7 @@ func ActionConfigFromEnv() ActionConfig {
 	return ActionConfig{
 		ReleaseBranch:    os.Getenv("INPUT_RELEASE_BRANCH"),
 		ReleaseStrategy:  os.Getenv("INPUT_RELEASE_STRATEGY"),
-		NextTag:          os.Getenv("INPUT_NEXT_TAG"),
+		NextTag:          os.Getenv("INPUT_TAG"),
 		TagFormat:        os.Getenv("INPUT_TAG_FORMAT"),
 		GithubApiUrl:     os.Getenv("INPUT_GITHUB_API_URL"),
 		GithubUploadsUrl: os.Getenv("INPUT_GITHUB_UPLOADS_URL"),

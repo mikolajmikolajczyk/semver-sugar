@@ -7,7 +7,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v65 v65.0.0
-	golang.org/x/oauth2 v0.34.0
+	golang.org/x/oauth2 v0.35.0
 )
 
 require github.com/google/go-querystring v1.2.0 // indirect
